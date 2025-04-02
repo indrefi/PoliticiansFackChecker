@@ -521,7 +521,7 @@
         }
 
         // Fetch and process the CSV data
-        fetch('data.csv')
+        fetch('factual_checker/app/politician_stats.csv')
             .then(response => response.text())
             .then(csv => {
                 const lines = csv.split('\n');

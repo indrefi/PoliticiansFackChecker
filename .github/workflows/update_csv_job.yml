@@ -1,0 +1,35 @@
+name: Update CSV Daily
+
+on:
+  schedule:
+    - cron: "0 0 * * *"  # Runs daily at midnight UTC
+  workflow_dispatch:  # Allows manual trigger
+
+jobs:
+  update:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout Repository
+        uses: actions/checkout@v3
+
+      - name: Set up Python
+        uses: actions/setup-python@v4
+        with:
+          python-version: "3.x"
+
+      - name: Install Dependencies
+        run: |
+          pip install --upgrade pip
+          pip install -r factual_checker/requirements.txt
+
+      - name: Run Python Script
+        run: python factual_checker/app/main.py
+
+      - name: Commit and Push Changes
+        run: |
+          git config --global user.name "github-actions[bot]"
+          git config --global user.email "github-actions[bot]@users.noreply.github.com"
+          git add factual_checker/app/politician_stats.csv
+          git commit -m "Auto-update CSV [$(date)]" || echo "No changes to commit"
+          git push
