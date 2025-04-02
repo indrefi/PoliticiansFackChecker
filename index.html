@@ -1,0 +1,549 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Credibility Metrics Visualization</title>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <style>
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+            margin: 0;
+            padding: 0;
+            background-color: #f5f5f5;
+            -webkit-text-size-adjust: 100%;
+            -webkit-tap-highlight-color: transparent;
+        }
+
+        .container {
+            max-width: 1400px;
+            margin: 0 auto;
+            background-color: white;
+            padding: 20px;
+            border-radius: 10px;
+            box-shadow: 0 0 10px rgba(0,0,0,0.1);
+        }
+
+        h1 {
+            color: #333;
+            text-align: center;
+            margin-bottom: 20px;
+            font-size: 24px;
+            line-height: 1.3;
+        }
+
+        .controls {
+            display: flex;
+            justify-content: center;
+            margin-bottom: 20px;
+            padding: 0 10px;
+        }
+
+        select {
+            padding: 12px 16px;
+            border: 1px solid #ddd;
+            border-radius: 8px;
+            font-size: 16px;
+            min-width: 200px;
+            background-color: white;
+            -webkit-appearance: none;
+            appearance: none;
+            background-image: url("data:image/svg+xml;charset=UTF-8,%3csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='currentColor' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3e%3cpolyline points='6 9 12 15 18 9'%3e%3c/polyline%3e%3c/svg%3e");
+            background-repeat: no-repeat;
+            background-position: right 10px center;
+            background-size: 16px;
+        }
+
+        .charts-grid {
+            display: grid;
+            grid-template-columns: 1fr;
+            gap: 20px;
+            margin-top: 20px;
+        }
+
+        .main-charts {
+            display: grid;
+            grid-template-columns: 1fr;
+            gap: 20px;
+        }
+
+        .secondary-charts {
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 15px;
+        }
+
+        .chart-container {
+            position: relative;
+            height: 300px;
+            width: 100%;
+            background-color: #fff;
+            border-radius: 12px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.05);
+            overflow: hidden;
+        }
+
+        .chart-title {
+            text-align: center;
+            margin-bottom: 10px;
+            color: #333;
+            font-size: 16px;
+            font-weight: 600;
+            line-height: 1.2;
+        }
+
+        canvas {
+            max-width: 100% !important;
+            height: 100% !important;
+        }
+
+        /* iPhone 12 Pro and similar devices */
+        @media screen and (max-width: 428px) {
+            .container {
+                padding: 10px;
+                margin: 10px;
+                border-radius: 8px;
+            }
+
+            h1 {
+                font-size: 20px;
+                margin-bottom: 15px;
+            }
+
+            .controls {
+                margin-bottom: 15px;
+            }
+
+            select {
+                width: 100%;
+                max-width: 100%;
+                font-size: 15px;
+                padding: 10px 14px;
+            }
+
+            .charts-grid {
+                gap: 15px;
+            }
+
+            .main-charts {
+                gap: 15px;
+            }
+
+            .secondary-charts {
+                grid-template-columns: 1fr;
+                gap: 15px;
+            }
+
+            .chart-container {
+                height: 250px;
+                border-radius: 8px;
+            }
+
+            .chart-title {
+                font-size: 14px;
+                margin-bottom: 8px;
+            }
+        }
+
+        /* Smaller devices */
+        @media screen and (max-width: 375px) {
+            .container {
+                padding: 8px;
+                margin: 8px;
+            }
+
+            h1 {
+                font-size: 18px;
+            }
+
+            .chart-container {
+                height: 220px;
+            }
+
+            .chart-title {
+                font-size: 13px;
+            }
+        }
+
+        /* Landscape orientation */
+        @media screen and (max-height: 428px) and (orientation: landscape) {
+            .chart-container {
+                height: 200px;
+            }
+
+            .container {
+                padding: 8px;
+            }
+
+            h1 {
+                font-size: 18px;
+                margin-bottom: 10px;
+            }
+
+            .secondary-charts {
+                grid-template-columns: 1fr;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>Metrici De Credibilitate</h1>
+        <div class="controls">
+            <select id="nameSelect">
+                <option value="">Selectează o persoană</option>
+            </select>
+        </div>
+        <div class="charts-grid">
+            <div class="main-charts">
+                <div class="chart-container">
+                    <div class="chart-title">Credibilitate Comparație</div>
+                    <canvas id="credibilitateChart"></canvas>
+                </div>
+                <div class="chart-container">
+                    <div class="chart-title">Număr declarații Comparație</div>
+                    <canvas id="numarDeclaratiiChart"></canvas>
+                </div>
+                <div class="chart-container">
+                    <div class="chart-title">Credibilitate</div>
+                    <canvas id="credibilitateIndividualChart"></canvas>
+                </div>
+                <div class="chart-container">
+                    <div class="chart-title">Număr declarații</div>
+                    <canvas id="numarDeclaratiiIndividualChart"></canvas>
+                </div>
+            </div>
+            <div class="secondary-charts">
+                <div class="chart-container">
+                    <div class="chart-title">False</div>
+                    <canvas id="falseChart"></canvas>
+                </div>
+                <div class="chart-container">
+                    <div class="chart-title">Trunchiate</div>
+                    <canvas id="trunchiateChart"></canvas>
+                </div>
+                <div class="chart-container">
+                    <div class="chart-title">Parțial adevărate</div>
+                    <canvas id="partialAdevarateChart"></canvas>
+                </div>
+                <div class="chart-container">
+                    <div class="chart-title">Adevărate</div>
+                    <canvas id="adevarateChart"></canvas>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        let charts = {
+            credibilitate: null,
+            numarDeclaratii: null,
+            credibilitateIndividual: null,
+            numarDeclaratiiIndividual: null,
+            false: null,
+            trunchiate: null,
+            partialAdevarate: null,
+            adevarate: null
+        };
+        let data = null;
+
+        function updateCharts() {
+            const selectedName = document.getElementById('nameSelect').value;
+
+            if (!selectedName) {
+                // Destroy all charts if no name is selected
+                Object.values(charts).forEach(chart => {
+                    if (chart) {
+                        chart.destroy();
+                    }
+                });
+                charts = {
+                    credibilitate: null,
+                    numarDeclaratii: null,
+                    credibilitateIndividual: null,
+                    numarDeclaratiiIndividual: null,
+                    false: null,
+                    trunchiate: null,
+                    partialAdevarate: null,
+                    adevarate: null
+                };
+                return;
+            }
+
+            // Filter and sort data by date and name, keeping only the latest entry for each date-name combination
+            const filteredData = data.filter(item => item.Nume === selectedName)
+                .sort((a, b) => new Date(a.Data) - new Date(b.Data))
+                .reduce((acc, current) => {
+                    const existingIndex = acc.findIndex(item => 
+                        item.Data === current.Data && 
+                        item.Nume === current.Nume
+                    );
+                    
+                    if (existingIndex === -1) {
+                        acc.push(current);
+                    } else {
+                        // Check if the values are different
+                        const existing = acc[existingIndex];
+                        const hasDifferentValues = 
+                            existing.Credibilitate !== current.Credibilitate ||
+                            existing['Număr declarații'] !== current['Număr declarații'] ||
+                            existing.False !== current.False ||
+                            existing.Trunchiate !== current.Trunchiate ||
+                            existing['Parțial adevărate'] !== current['Parțial adevărate'] ||
+                            existing.Adevărate !== current.Adevărate;
+                        
+                        // If values are different, update with the latest entry
+                        if (hasDifferentValues) {
+                            acc[existingIndex] = current;
+                        }
+                    }
+                    return acc;
+                }, []);
+
+            // Update comparison charts (Credibilitate and Număr declarații)
+            const credibilitateCtx = document.getElementById('credibilitateChart').getContext('2d');
+            const numarDeclaratiiCtx = document.getElementById('numarDeclaratiiChart').getContext('2d');
+
+            if (charts.credibilitate) charts.credibilitate.destroy();
+            if (charts.numarDeclaratii) charts.numarDeclaratii.destroy();
+
+            charts.credibilitate = createMainChart(credibilitateCtx, 'Credibilitate', data, selectedName);
+            charts.numarDeclaratii = createMainChart(numarDeclaratiiCtx, 'Număr declarații', data, selectedName);
+
+            // Update individual charts
+            const credibilitateIndividualCtx = document.getElementById('credibilitateIndividualChart').getContext('2d');
+            const numarDeclaratiiIndividualCtx = document.getElementById('numarDeclaratiiIndividualChart').getContext('2d');
+
+            if (charts.credibilitateIndividual) charts.credibilitateIndividual.destroy();
+            if (charts.numarDeclaratiiIndividual) charts.numarDeclaratiiIndividual.destroy();
+
+            charts.credibilitateIndividual = createChart(credibilitateIndividualCtx, `${selectedName} - Credibilitate`, {
+                dates: filteredData.map(item => item.Data),
+                values: filteredData.map(item => item.Credibilitate)
+            }, 'rgb(255, 99, 132)');
+
+            charts.numarDeclaratiiIndividual = createChart(numarDeclaratiiIndividualCtx, `${selectedName} - Număr declarații`, {
+                dates: filteredData.map(item => item.Data),
+                values: filteredData.map(item => item['Număr declarații'])
+            }, 'rgb(54, 162, 235)');
+
+            // Update secondary charts
+            const secondaryCharts = [
+                { id: 'false', label: 'False', key: 'False' },
+                { id: 'trunchiate', label: 'Trunchiate', key: 'Trunchiate' },
+                { id: 'partialAdevarate', label: 'Parțial adevărate', key: 'Parțial adevărate' },
+                { id: 'adevarate', label: 'Adevărate', key: 'Adevărate' }
+            ];
+
+            secondaryCharts.forEach(metric => {
+                const ctx = document.getElementById(metric.id + 'Chart').getContext('2d');
+                if (charts[metric.id]) {
+                    charts[metric.id].destroy();
+                }
+
+                charts[metric.id] = createChart(ctx, `${selectedName} - ${metric.label}`, {
+                    dates: filteredData.map(item => item.Data),
+                    values: filteredData.map(item => item[metric.key])
+                }, getRandomColor());
+            });
+        }
+
+        function createMainChart(ctx, label, data, selectedName) {
+            const uniqueNames = [...new Set(data.map(item => item.Nume))].sort();
+            const dates = [...new Set(data.map(item => item.Data))].sort();
+            
+            const datasets = uniqueNames.map((name, index) => {
+                const personData = data.filter(item => item.Nume === name)
+                    .sort((a, b) => new Date(a.Data) - new Date(b.Data))
+                    .reduce((acc, current) => {
+                        const existingIndex = acc.findIndex(item => 
+                            item.Data === current.Data && 
+                            item.Nume === current.Nume
+                        );
+                        
+                        if (existingIndex === -1) {
+                            acc.push(current);
+                        } else {
+                            // Check if the values are different
+                            const existing = acc[existingIndex];
+                            const propertyName = label === 'Număr declarații' ? 'Număr declarații' : label;
+                            const hasDifferentValues = existing[propertyName] !== current[propertyName];
+                            
+                            // If values are different, update with the latest entry
+                            if (hasDifferentValues) {
+                                acc[existingIndex] = current;
+                            }
+                        }
+                        return acc;
+                    }, []);
+
+                const propertyName = label === 'Număr declarații' ? 'Număr declarații' : label;
+                const values = dates.map(date => {
+                    const entry = personData.find(item => item.Data === date);
+                    return entry ? entry[propertyName] : null;
+                });
+
+                const isSelected = name === selectedName;
+                const baseColor = isSelected ? 'rgb(255, 99, 132)' : getRandomColor();
+
+                return {
+                    label: name,
+                    data: values,
+                    borderColor: baseColor,
+                    backgroundColor: baseColor,
+                    borderWidth: isSelected ? 3 : 1,
+                    tension: 0.1,
+                    fill: false,
+                    pointRadius: isSelected ? 6 : 4,
+                    pointHoverRadius: isSelected ? 8 : 6
+                };
+            });
+
+            return new Chart(ctx, {
+                type: 'line',
+                data: {
+                    labels: dates,
+                    datasets: datasets
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    layout: {
+                        padding: {
+                            left: 10,
+                            right: 10,
+                            top: 10,
+                            bottom: 10
+                        }
+                    },
+                    scales: {
+                        y: {
+                            beginAtZero: true,
+                            title: {
+                                display: true,
+                                text: label
+                            },
+                            ticks: {
+                                maxTicksLimit: 6
+                            }
+                        },
+                        x: {
+                            title: {
+                                display: true,
+                                text: 'Data'
+                            },
+                            ticks: {
+                                maxRotation: 45,
+                                minRotation: 45
+                            }
+                        }
+                    }
+                }
+            });
+        }
+
+        function createChart(ctx, title, data, color) {
+            return new Chart(ctx, {
+                type: 'line',
+                data: {
+                    labels: data.dates,
+                    datasets: [{
+                        label: title,
+                        data: data.values,
+                        borderColor: color,
+                        backgroundColor: color,
+                        borderWidth: 2,
+                        tension: 0.1,
+                        fill: false,
+                        pointRadius: 4,
+                        pointHoverRadius: 6
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    layout: {
+                        padding: {
+                            left: 10,
+                            right: 10,
+                            top: 10,
+                            bottom: 10
+                        }
+                    },
+                    scales: {
+                        y: {
+                            beginAtZero: true,
+                            title: {
+                                display: true,
+                                text: title
+                            },
+                            ticks: {
+                                maxTicksLimit: 6
+                            }
+                        },
+                        x: {
+                            title: {
+                                display: true,
+                                text: 'Data'
+                            },
+                            ticks: {
+                                maxRotation: 45,
+                                minRotation: 45
+                            }
+                        }
+                    }
+                }
+            });
+        }
+
+        // Function to generate random colors
+        function getRandomColor() {
+            return `rgba(${Math.random() * 255}, ${Math.random() * 255}, ${Math.random() * 255}, 0.5)`;
+        }
+
+        // Function to populate the name dropdown with unique values
+        function populateNameDropdown(data) {
+            const nameSelect = document.getElementById('nameSelect');
+            const uniqueNames = [...new Set(data.map(item => item.Nume))].sort();
+            
+            // Clear existing options except the first one
+            while (nameSelect.options.length > 1) {
+                nameSelect.remove(1);
+            }
+            
+            // Add unique names to dropdown
+            uniqueNames.forEach(name => {
+                const option = document.createElement('option');
+                option.value = name;
+                option.textContent = name;
+                nameSelect.appendChild(option);
+            });
+        }
+
+        // Fetch and process the CSV data
+        fetch('data.csv')
+            .then(response => response.text())
+            .then(csv => {
+                const lines = csv.split('\n');
+                const headers = lines[0].split(',');
+                data = lines.slice(1).map(line => {
+                    const values = line.split(',');
+                    return {
+                        Nume: values[0],
+                        Data: values[1],
+                        Credibilitate: parseInt(values[2]),
+                        'Număr declarații': parseInt(values[3]),
+                        False: parseInt(values[4]),
+                        Trunchiate: parseInt(values[5]),
+                        'Parțial adevărate': parseInt(values[6]),
+                        Adevărate: parseInt(values[7])
+                    };
+                });
+                // Populate the dropdown after data is loaded
+                populateNameDropdown(data);
+            });
+
+        document.getElementById('nameSelect').addEventListener('change', updateCharts);
+    </script>
+</body>
+</html> 
