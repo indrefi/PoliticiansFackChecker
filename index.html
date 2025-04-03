@@ -195,6 +195,10 @@
             </select>
         </div>
         <div class="charts-grid">
+            <div class="chart-container" style="height: 400px;">
+                <div class="chart-title">Mediană Credibilitate</div>
+                <canvas id="medianaCredibilitateChart"></canvas>
+            </div>
             <div class="main-charts">
                 <div class="chart-container">
                     <div class="chart-title">Credibilitate Comparație</div>
@@ -243,7 +247,8 @@
             false: null,
             trunchiate: null,
             partialAdevarate: null,
-            adevarate: null
+            adevarate: null,
+            medianaCredibilitate: null
         };
         let data = null;
 
@@ -265,7 +270,8 @@
                     false: null,
                     trunchiate: null,
                     partialAdevarate: null,
-                    adevarate: null
+                    adevarate: null,
+                    medianaCredibilitate: null
                 };
                 return;
             }
@@ -346,6 +352,13 @@
                     values: filteredData.map(item => item[metric.key])
                 }, getRandomColor());
             });
+
+            // Create mean Credibilitate chart
+            const medianaCredibilitateCtx = document.getElementById('medianaCredibilitateChart').getContext('2d');
+            if (charts.medianaCredibilitate) {
+                charts.medianaCredibilitate.destroy();
+            }
+            charts.medianaCredibilitate = createMeanChart(medianaCredibilitateCtx, data, selectedName);
         }
 
         function createMainChart(ctx, label, data, selectedName) {
@@ -399,6 +412,24 @@
                 };
             });
 
+            // Configure Y-axis based on the chart type
+            const yAxisConfig = {
+                beginAtZero: true,
+                title: {
+                    display: true,
+                    text: label
+                },
+                ticks: {
+                    maxTicksLimit: 6
+                }
+            };
+
+            // Set fixed range for Credibilitate charts
+            if (label === 'Credibilitate' || label === 'Credibilitate Comparație') {
+                yAxisConfig.min = 0;
+                yAxisConfig.max = 100;
+            }
+
             return new Chart(ctx, {
                 type: 'line',
                 data: {
@@ -417,16 +448,7 @@
                         }
                     },
                     scales: {
-                        y: {
-                            beginAtZero: true,
-                            title: {
-                                display: true,
-                                text: label
-                            },
-                            ticks: {
-                                maxTicksLimit: 6
-                            }
-                        },
+                        y: yAxisConfig,
                         x: {
                             title: {
                                 display: true,
@@ -517,6 +539,88 @@
                 option.value = name;
                 option.textContent = name;
                 nameSelect.appendChild(option);
+            });
+        }
+
+        // Function to create a horizontal bar chart showing mean Credibilitate scores
+        function createMeanChart(ctx, data, selectedName) {
+            // Group data by name
+            const groupedData = {};
+            data.forEach(item => {
+                if (!groupedData[item.Nume]) {
+                    groupedData[item.Nume] = [];
+                }
+                groupedData[item.Nume].push(item.Credibilitate);
+            });
+
+            // Calculate arithmetic mean for each person
+            const meanData = Object.entries(groupedData).map(([name, values]) => {
+                // Calculate mean
+                const sum = values.reduce((acc, val) => acc + val, 0);
+                const mean = sum / values.length;
+                
+                return { name, mean };
+            });
+
+            // Sort by mean value (descending)
+            meanData.sort((a, b) => b.mean - a.mean);
+
+            // Prepare data for the chart
+            const labels = meanData.map(item => item.name);
+            const values = meanData.map(item => item.mean);
+            const backgroundColors = meanData.map(item => 
+                item.name === selectedName ? 'rgba(255, 99, 132, 0.8)' : 'rgba(54, 162, 235, 0.6)'
+            );
+            const borderColors = meanData.map(item => 
+                item.name === selectedName ? 'rgb(255, 99, 132)' : 'rgb(54, 162, 235)'
+            );
+
+            return new Chart(ctx, {
+                type: 'bar',
+                data: {
+                    labels: labels,
+                    datasets: [{
+                        label: 'Medie Credibilitate',
+                        data: values,
+                        backgroundColor: backgroundColors,
+                        borderColor: borderColors,
+                        borderWidth: 1
+                    }]
+                },
+                options: {
+                    indexAxis: 'y',
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: {
+                        legend: {
+                            display: false
+                        },
+                        tooltip: {
+                            callbacks: {
+                                label: function(context) {
+                                    return `Medie: ${context.raw.toFixed(2)}`;
+                                }
+                            }
+                        }
+                    },
+                    scales: {
+                        x: {
+                            beginAtZero: true,
+                            max: 100,
+                            title: {
+                                display: true,
+                                text: 'Credibilitate'
+                            }
+                        },
+                        y: {
+                            ticks: {
+                                font: {
+                                    size: 12
+                                }
+                            }
+                        }
+                    }
+                }
             });
         }
 
